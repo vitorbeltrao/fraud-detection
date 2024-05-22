@@ -163,3 +163,4 @@ cython_debug/
 /data
 /prototype_notebooks/mlruns
 *.toml
+.config
