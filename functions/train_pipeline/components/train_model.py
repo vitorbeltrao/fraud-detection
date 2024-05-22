@@ -46,9 +46,10 @@ class CountryMapper(BaseEstimator, TransformerMixin):
     This transformer maps the country codes 'BR', 'AR', 'UY', and 'US' to their respective
     values and maps all other country codes to 'outros'.
     '''
+
     def fit(self, X, y=None):
         return self
-    
+
     def transform(self, X):
         def map_countries(country):
             if country == 'BR':
@@ -61,10 +62,10 @@ class CountryMapper(BaseEstimator, TransformerMixin):
                 return 'US'
             else:
                 return 'outros'
-        
+
         X['pais'] = X['pais'].apply(map_countries)
         return X
-    
+
     def get_feature_names_out(self, X):
         return ['pais']
 
@@ -113,14 +114,15 @@ def get_inference_pipeline() -> Pipeline:
         remainder='drop')
 
     # combine all the processed feature names into a single list
-    processed_features = qualitative_feat + entrega_doc_2_feat + entrega_doc_3_feat + pais_feat + quantitative_continue_feat
+    processed_features = qualitative_feat + entrega_doc_2_feat + \
+        entrega_doc_3_feat + pais_feat + quantitative_continue_feat
 
     # instantiate the final model
     final_model = Pipeline(
-            steps=[('preprocessor', preprocessor),
-                   ('under', RandomUnderSampler(random_state=42)),
-                   ('ml_model', RandomForestClassifier(random_state=42))])
-    
+        steps=[('preprocessor', preprocessor),
+               ('under', RandomUnderSampler(random_state=42)),
+               ('ml_model', RandomForestClassifier(random_state=42))])
+
     return final_model, processed_features
 
 
@@ -145,8 +147,10 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
     # Calculate the mean importance of features across all trees
     global_exp['importance'] = global_exp.mean(axis=1)
 
-    # Sort the DataFrame by the 'importance' column in descending order and plot it
-    global_exp_sorted = global_exp.sort_values(by='importance', ascending=False)
+    # Sort the DataFrame by the 'importance' column in descending order and
+    # plot it
+    global_exp_sorted = global_exp.sort_values(
+        by='importance', ascending=False)
     plt.figure(figsize=(10, 6))
     plt.bar(global_exp_sorted.index, global_exp_sorted['importance'])
     plt.ylabel("Feature importance")
@@ -164,7 +168,7 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
 def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
     '''
     Plot and save the calibration curve for the provided model.
-    
+
     Args:
         best_model: The best trained model (e.g., the result of grid_search.best_estimator_).
         X: Feature matrix for making predictions.
@@ -186,7 +190,7 @@ def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
     plt.ylabel('True Frequency')
     plt.title('Calibration Curve')
     plt.legend()
-    
+
     # Save the plot as an image file
     plt.savefig(output_image_path)
     plt.show()
@@ -201,7 +205,7 @@ def train_model(
         refit: str,
         rf_config: dict) -> None:
     '''
-    Train a machine learning model using grid search and cross-validation, 
+    Train a machine learning model using grid search and cross-validation,
     then save the model and related artifacts to AWS S3.
 
     Args:
@@ -212,7 +216,7 @@ def train_model(
         scoring (list): A list of scoring metrics to use.
         refit (str): The metric to refit the model on.
         rf_config (dict): Configuration for the Random Forest model, including the parameter grid.
-    
+
     Returns:
         dict: A dictionary with the status code and message of the training result.
     '''
@@ -228,7 +232,8 @@ def train_model(
     logging.info('S3 authentication was created successfully.')
 
     # divide data into train and test to avoid data snooping bias
-    train_set, _ = train_test_split(dataset, test_size=test_size, random_state=42)
+    train_set, _ = train_test_split(
+        dataset, test_size=test_size, random_state=42)
 
     # get the final model
     model, _ = get_inference_pipeline()
@@ -244,10 +249,10 @@ def train_model(
     logging.info('Training...')
     starttime = timeit.default_timer()
     grid_search = GridSearchCV(
-        model, 
-        param_grid, 
-        cv=cv, 
-        scoring=scoring, 
+        model,
+        param_grid,
+        cv=cv,
+        scoring=scoring,
         refit=refit,
         return_train_score=True)
     grid_search.fit(X, y)
@@ -283,8 +288,14 @@ def train_model(
     output_feature_importance_image_path = f'feature_importance_{final_model_sha}.png'
 
     images_feature_importance_directory = f'images/{output_feature_importance_image_path}'
-    feature_importance_rf_plot(best_ml_model, preprocessor, output_feature_importance_image_path)
-    s3_client.upload_file(output_feature_importance_image_path, BUCKET_NAME_MODEL, images_feature_importance_directory)
+    feature_importance_rf_plot(
+        best_ml_model,
+        preprocessor,
+        output_feature_importance_image_path)
+    s3_client.upload_file(
+        output_feature_importance_image_path,
+        BUCKET_NAME_MODEL,
+        images_feature_importance_directory)
     logging.info('Model interpretation image was inserted into bucket.')
 
     # displaying the model calibration
@@ -292,8 +303,15 @@ def train_model(
     output_calibration_curve_image_path = f'calibration_curve_{final_model_sha}.png'
     images_calibration_curve_directory = f'images/{output_calibration_curve_image_path}'
 
-    plot_calibration_curve(final_model, X, y, output_calibration_curve_image_path)
-    s3_client.upload_file(output_calibration_curve_image_path, BUCKET_NAME_MODEL, images_calibration_curve_directory)
+    plot_calibration_curve(
+        final_model,
+        X,
+        y,
+        output_calibration_curve_image_path)
+    s3_client.upload_file(
+        output_calibration_curve_image_path,
+        BUCKET_NAME_MODEL,
+        images_calibration_curve_directory)
     logging.info('Model calibration image was inserted into bucket.')
 
     # save the model in s3 bucket
@@ -302,7 +320,7 @@ def train_model(
         Bucket=BUCKET_NAME_MODEL, Key=f'pickles/model_{final_model_sha}.pkl',
         Body=pickle.dumps(final_model), ContentType='application/octet-stream')
     logging.info('Model pickle file was inserted into bucket.')
-    
+
     # save the model register in dynamodb
     dynamodb = boto3.resource('dynamodb')
     dynamo_table = dynamodb.Table('model-register')
@@ -327,4 +345,3 @@ def train_model(
         'statusCode': 200,
         'body': 'Model trained and inserted successfully.'
     }
-    
