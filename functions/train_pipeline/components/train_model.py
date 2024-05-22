@@ -24,14 +24,15 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import make_pipeline, Pipeline
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.calibration import calibration_curve
 
 
 # config
-qualitative_feat = ['score_1', 'entrega_doc_1']
-entrega_doc_2_feat = ['entrega_doc_2']
-entrega_doc_3_feat = ['entrega_doc_3']
-pais_feat = ['pais']
-quantitative_continue_feat = ['score_4', 'score_9', 'score_10', 'valor_compra']
+qualitative_feat = config('QUALITATIVE_FEAT')
+entrega_doc_2_feat = config('ENTREGA_DOC_2_FEAT')
+entrega_doc_3_feat = config('ENTREGA_DOC_3_FEAT')
+pais_feat = config('PAIS_FEAT')
+quantitative_continue_feat = config('BUCKET_NAME_MODEL')
 BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
@@ -78,7 +79,7 @@ def get_inference_pipeline() -> Pipeline:
     class imbalance.
 
     Returns:
-    tuple: A tuple containing the final pipeline and the list of processed feature names.
+        tuple: A tuple containing the final pipeline and the list of processed feature names.
     '''
 
     # preprocessing pipeline for the features
@@ -127,10 +128,10 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
     '''
     Generate and export a feature importance plot for the random forest model.
 
-    Parameters:
-    model (RandomForestClassifier): The trained RandomForest model.
-    preprocessor (ColumnTransformer): The preprocessor used in the pipeline.
-    output_image_path (str): The path to save the output image.
+    Args:
+        model (RandomForestClassifier): The trained RandomForest model.
+        preprocessor (ColumnTransformer): The preprocessor used in the pipeline.
+        output_image_path (str): The path to save the output image.
     '''
     # Importance based on each tree
     global_exp = pd.DataFrame()
@@ -160,6 +161,37 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
     plt.show()
 
 
+def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
+    '''
+    Plot and save the calibration curve for the provided model.
+    
+    Args:
+        best_model: The best trained model (e.g., the result of grid_search.best_estimator_).
+        X: Feature matrix for making predictions.
+        y: True labels.
+        output_image_path: The path to save the output image.
+        n_bins: Number of bins for the calibration curve (default: 10).
+    '''
+    # Predict probabilities with the best model
+    y_probs = best_model.predict_proba(X)[:, 1]
+
+    # Calculate the calibration curve
+    prob_true, prob_pred = calibration_curve(y, y_probs, n_bins=n_bins)
+
+    # Plot the calibration curve
+    plt.figure(figsize=(10, 7))
+    plt.plot(prob_pred, prob_true, marker='o', label='Calibration Curve')
+    plt.plot([0, 1], [0, 1], linestyle='--', label='Perfectly Calibrated')
+    plt.xlabel('Predicted Probability')
+    plt.ylabel('True Frequency')
+    plt.title('Calibration Curve')
+    plt.legend()
+    
+    # Save the plot as an image file
+    plt.savefig(output_image_path)
+    plt.show()
+
+
 def train_model(
         dataset: str,
         test_size: int,
@@ -168,24 +200,21 @@ def train_model(
         scoring: list,
         refit: str,
         rf_config: dict) -> None:
-    '''Function to train the model, tune the hyperparameters
-    and save the best final model
+    '''
+    Train a machine learning model using grid search and cross-validation, 
+    then save the model and related artifacts to AWS S3.
 
-    :param train_set: (str)
-    Path to the wandb leading to the training dataset
-
-    :param label_column: (str)
-    Column name of the dataset to be trained that will be the label
-
-    :param cv: (int)
-    Determines the cross-validation split strategy
-
-    :param scoring: (list)
-    Strategy to evaluate the performance of the model of
-    cross-validation in the validation set
-
-    :param rf_config: (dict)
-    Dict with the values of the hyperparameters of the adopted model
+    Args:
+        dataset (str): The dataset to be used for training.
+        test_size (int): The proportion of the dataset to include in the test split.
+        label_column (str): The name of the column to be used as the label.
+        cv (int): The number of cross-validation folds.
+        scoring (list): A list of scoring metrics to use.
+        refit (str): The metric to refit the model on.
+        rf_config (dict): Configuration for the Random Forest model, including the parameter grid.
+    
+    Returns:
+        dict: A dictionary with the status code and message of the training result.
     '''
     # create a session with AWS credentials
     session = boto3.Session(
@@ -208,12 +237,8 @@ def train_model(
     X = train_set.drop([label_column], axis=1)
     y = train_set[label_column]
 
-    # hyperparameter interval to be tested
-    param_grid = {
-        'ml_model__n_estimators': [150, 250, 350],
-        'ml_model__n_estimators__max_depth': [8, 9, None],
-        'under__sampling_strategy': ['auto', 0.5, 0.7, 0.8, 0.9, 1.0]
-    }
+    # extract param_grid from rf_config
+    param_grid = rf_config['param_grid']
 
     # training and apply grid search with cross-validation
     logging.info('Training...')
@@ -240,7 +265,7 @@ def train_model(
         best_train_metric = results[f'mean_train_{metric}'][grid_search.best_index_]
         best_val_metric = results[f'mean_test_{metric}'][grid_search.best_index_]
         print(f"Best training {metric}: {best_train_metric:.4f}")
-        print(f"Best vaidation {metric}: {best_val_metric:.4f}")
+        print(f"Best validation {metric}: {best_val_metric:.4f}")
 
         best_metrics[f'train_{metric}'] = best_train_metric
         best_metrics[f'test_{metric}'] = best_val_metric
@@ -257,15 +282,18 @@ def train_model(
     preprocessor = grid_search.best_estimator_.named_steps['preprocessor']
     output_feature_importance_image_path = f'feature_importance_{final_model_sha}.png'
 
-    images_directory = f'images/{output_feature_importance_image_path}'
+    images_feature_importance_directory = f'images/{output_feature_importance_image_path}'
     feature_importance_rf_plot(best_ml_model, preprocessor, output_feature_importance_image_path)
-    s3_client.upload_file(output_feature_importance_image_path, BUCKET_NAME_MODEL, images_directory)
+    s3_client.upload_file(output_feature_importance_image_path, BUCKET_NAME_MODEL, images_feature_importance_directory)
     logging.info('Model interpretation image was inserted into bucket.')
 
     # displaying the model calibration
     logging.info('Displaying model calibration...')
+    output_calibration_curve_image_path = f'calibration_curve_{final_model_sha}.png'
+    images_calibration_curve_directory = f'images/{output_calibration_curve_image_path}'
 
-
+    plot_calibration_curve(final_model, X, y, output_calibration_curve_image_path)
+    s3_client.upload_file(output_calibration_curve_image_path, BUCKET_NAME_MODEL, images_calibration_curve_directory)
     logging.info('Model calibration image was inserted into bucket.')
 
     # save the model in s3 bucket
@@ -279,9 +307,9 @@ def train_model(
     dynamodb = boto3.resource('dynamodb')
     dynamo_table = dynamodb.Table('model-register')
 
-    # insert the item with necessary fields to monitore model drift
+    # insert the item with necessary fields to monitor model drift
     s3_url_feature_importance = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/{output_feature_importance_image_path}"
-    s3_url_model_calibration = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/{output_image_path}"
+    s3_url_model_calibration = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/{output_calibration_curve_image_path}"
 
     dynamo_table.put_item(Item={
         'id': int(pd.Timestamp.now().timestamp()),
@@ -291,11 +319,12 @@ def train_model(
         'metrics': json.dumps(best_metrics),
         'feature_importance_url': s3_url_feature_importance,
         'model_calibration_url': s3_url_model_calibration,
+        'hyperparameters': json.dumps(param_grid)
     })
     logging.info('The final model was inserted into dynamo table.')
 
     return {
         'statusCode': 200,
-        'body': 'Model trained and inserted successful.'
+        'body': 'Model trained and inserted successfully.'
     }
     
