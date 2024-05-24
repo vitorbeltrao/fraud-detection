@@ -13,6 +13,7 @@ import pickle
 import boto3
 import json
 import timeit
+import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 from decouple import config
@@ -26,7 +27,6 @@ from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.calibration import calibration_curve
 
-
 # config
 qualitative_feat = config('QUALITATIVE_FEAT')
 entrega_doc_2_feat = config('ENTREGA_DOC_2_FEAT')
@@ -37,6 +37,11 @@ BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = config('AWS_REGION')
+
+logging.basicConfig(
+    level=logging.INFO,
+    filemode='w',
+    format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s')
 
 
 class CountryMapper(BaseEstimator, TransformerMixin):
@@ -126,7 +131,7 @@ def get_inference_pipeline() -> Pipeline:
     return final_model, processed_features
 
 
-def feature_importance_rf_plot(model, preprocessor, output_image_path):
+def feature_importance_rf_plot(model, preprocessor, output_image_path) -> None:
     '''
     Generate and export a feature importance plot for the random forest model.
 
@@ -134,6 +139,9 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
         model (RandomForestClassifier): The trained RandomForest model.
         preprocessor (ColumnTransformer): The preprocessor used in the pipeline.
         output_image_path (str): The path to save the output image.
+
+    Returns:
+        None
     '''
     # Importance based on each tree
     global_exp = pd.DataFrame()
@@ -165,7 +173,7 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path):
     plt.show()
 
 
-def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
+def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10) -> None:
     '''
     Plot and save the calibration curve for the provided model.
 
@@ -175,6 +183,9 @@ def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
         y: True labels.
         output_image_path: The path to save the output image.
         n_bins: Number of bins for the calibration curve (default: 10).
+
+    Returns:
+        None
     '''
     # Predict probabilities with the best model
     y_probs = best_model.predict_proba(X)[:, 1]
@@ -198,19 +209,19 @@ def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10):
 
 def train_model(
         dataset: str,
-        test_size: int,
+        test_size: float,
         label_column: str,
         cv: int,
         scoring: list,
         refit: str,
-        rf_config: dict) -> None:
+        rf_config: dict) -> dict:
     '''
     Train a machine learning model using grid search and cross-validation,
     then save the model and related artifacts to AWS S3.
 
     Args:
         dataset (str): The dataset to be used for training.
-        test_size (int): The proportion of the dataset to include in the test split.
+        test_size (float): The proportion of the dataset to include in the test split.
         label_column (str): The name of the column to be used as the label.
         cv (int): The number of cross-validation folds.
         scoring (list): A list of scoring metrics to use.
@@ -220,6 +231,9 @@ def train_model(
     Returns:
         dict: A dictionary with the status code and message of the training result.
     '''
+    # Get the current date
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
     # create a session with AWS credentials
     session = boto3.Session(
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -246,7 +260,7 @@ def train_model(
     param_grid = rf_config['param_grid']
 
     # training and apply grid search with cross-validation
-    logging.info('Training...')
+    logging.info('Training the model...')
     starttime = timeit.default_timer()
     grid_search = GridSearchCV(
         model,
@@ -260,7 +274,7 @@ def train_model(
     logging.info(f'The execution time of the model was:{timing}')
 
     # displaying the results of the grid search for all metrics
-    logging.info('Scoring...')
+    logging.info('Scoring the training model...')
     results = pd.DataFrame(grid_search.cv_results_)
     metrics = ['balanced_accuracy', 'f1', 'neg_brier_score']
     best_metrics = {}
@@ -273,7 +287,7 @@ def train_model(
         print(f"Best validation {metric}: {best_val_metric:.4f}")
 
         best_metrics[f'train_{metric}'] = best_train_metric
-        best_metrics[f'test_{metric}'] = best_val_metric
+        best_metrics[f'validation_{metric}'] = best_val_metric
 
     # get the final model
     final_model = grid_search.best_estimator_
@@ -287,7 +301,7 @@ def train_model(
     preprocessor = grid_search.best_estimator_.named_steps['preprocessor']
     output_feature_importance_image_path = f'feature_importance_{final_model_sha}.png'
 
-    images_feature_importance_directory = f'images/{output_feature_importance_image_path}'
+    images_feature_importance_directory = f'images/extracted_at={current_date}/{output_feature_importance_image_path}'
     feature_importance_rf_plot(
         best_ml_model,
         preprocessor,
@@ -301,7 +315,7 @@ def train_model(
     # displaying the model calibration
     logging.info('Displaying model calibration...')
     output_calibration_curve_image_path = f'calibration_curve_{final_model_sha}.png'
-    images_calibration_curve_directory = f'images/{output_calibration_curve_image_path}'
+    images_calibration_curve_directory = f'images/extracted_at={current_date}/{output_calibration_curve_image_path}'
 
     plot_calibration_curve(
         final_model,
@@ -315,10 +329,12 @@ def train_model(
     logging.info('Model calibration image was inserted into bucket.')
 
     # save the model in s3 bucket
-    logging.info('Putting the final model into dynamo table...')
+    logging.info('Putting the final trained model into dynamo table...')
     s3_client.put_object(
-        Bucket=BUCKET_NAME_MODEL, Key=f'pickles/model_{final_model_sha}.pkl',
-        Body=pickle.dumps(final_model), ContentType='application/octet-stream')
+        Bucket=BUCKET_NAME_MODEL, 
+        Key=f'pickles/extracted_at={current_date}/model_{final_model_sha}.pkl',
+        Body=pickle.dumps(final_model), 
+        ContentType='application/octet-stream')
     logging.info('Model pickle file was inserted into bucket.')
 
     # save the model register in dynamodb
@@ -326,8 +342,8 @@ def train_model(
     dynamo_table = dynamodb.Table('model-register')
 
     # insert the item with necessary fields to monitor model drift
-    s3_url_feature_importance = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/{output_feature_importance_image_path}"
-    s3_url_model_calibration = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/{output_calibration_curve_image_path}"
+    s3_url_feature_importance = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/extracted_at={current_date}/{output_feature_importance_image_path}"
+    s3_url_model_calibration = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/extracted_at={current_date}/{output_calibration_curve_image_path}"
 
     dynamo_table.put_item(Item={
         'id': int(pd.Timestamp.now().timestamp()),
@@ -339,7 +355,7 @@ def train_model(
         'model_calibration_url': s3_url_model_calibration,
         'hyperparameters': json.dumps(param_grid)
     })
-    logging.info('The final model was inserted into dynamo table.')
+    logging.info('The final trained model was inserted into dynamo table.')
 
     return {
         'statusCode': 200,

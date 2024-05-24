@@ -15,7 +15,7 @@ param_grid:
     - 0.9
     - 1.0
 
-# Carregar configuração do arquivo YAML
+# Load yaml file configuration
 # import yaml
 # with open('rf_config.yaml', 'r') as file:
 #     rf_config = yaml.safe_load(file)
