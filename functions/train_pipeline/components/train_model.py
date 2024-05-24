@@ -209,7 +209,7 @@ def plot_calibration_curve(best_model, X, y, output_image_path, n_bins=10) -> No
 
 def train_model(
         dataset: str,
-        test_size: int,
+        test_size: float,
         label_column: str,
         cv: int,
         scoring: list,
@@ -221,7 +221,7 @@ def train_model(
 
     Args:
         dataset (str): The dataset to be used for training.
-        test_size (int): The proportion of the dataset to include in the test split.
+        test_size (float): The proportion of the dataset to include in the test split.
         label_column (str): The name of the column to be used as the label.
         cv (int): The number of cross-validation folds.
         scoring (list): A list of scoring metrics to use.
@@ -287,7 +287,7 @@ def train_model(
         print(f"Best validation {metric}: {best_val_metric:.4f}")
 
         best_metrics[f'train_{metric}'] = best_train_metric
-        best_metrics[f'test_{metric}'] = best_val_metric
+        best_metrics[f'validation_{metric}'] = best_val_metric
 
     # get the final model
     final_model = grid_search.best_estimator_
@@ -331,8 +331,10 @@ def train_model(
     # save the model in s3 bucket
     logging.info('Putting the final trained model into dynamo table...')
     s3_client.put_object(
-        Bucket=BUCKET_NAME_MODEL, Key=f'pickles/model_{final_model_sha}.pkl',
-        Body=pickle.dumps(final_model), ContentType='application/octet-stream')
+        Bucket=BUCKET_NAME_MODEL, 
+        Key=f'pickles/extracted_at={current_date}/model_{final_model_sha}.pkl',
+        Body=pickle.dumps(final_model), 
+        ContentType='application/octet-stream')
     logging.info('Model pickle file was inserted into bucket.')
 
     # save the model register in dynamodb
