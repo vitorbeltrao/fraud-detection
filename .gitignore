@@ -162,5 +162,5 @@ cython_debug/
 # personalized ones
 /data
 /prototype_notebooks/mlruns
-*.toml
 .config
+.terraform/
