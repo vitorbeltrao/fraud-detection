@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "fraud-detection-terraform-bucket"
+        bucket = "fraud-detection-bucket"
         key    = "repo-image/terraform.tfstate"
         region = "us-east-1"
     }
