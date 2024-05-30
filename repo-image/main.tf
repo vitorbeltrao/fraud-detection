@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "fraud-detection-bucket"
+        bucket = "ct-fraud-detection-bucket"
         key    = "repo-image/terraform.tfstate"
         region = "us-east-1"
     }
@@ -11,6 +11,6 @@ provider "aws" {
 }
 
 
-resource "aws_ecr_repository" "repo-imagem" {
+resource "aws_ecr_repository" "repo-image" {
     name = "train-image"
 }
