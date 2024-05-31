@@ -21,6 +21,8 @@ from sklearn.metrics import balanced_accuracy_score, f1_score, brier_score_loss,
 
 # config
 BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
+DYNAMO_TABLE_TRAIN_MODEL = config('DYNAMO_TABLE_TRAIN_MODEL')
+DYNAMO_TABLE_TEST_MODEL = config('DYNAMO_TABLE_TEST_MODEL')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = config('AWS_REGION')
@@ -128,9 +130,8 @@ def evaluate_model(
 
     # load the last trained model registered
     logging.info('Loading the last model registered...')
-    dynamo_table_name = 'model-register'
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(dynamo_table_name)
+    table = dynamodb.Table(DYNAMO_TABLE_TRAIN_MODEL)
     answer = table.scan()
 
     if 'Items' in answer and len(answer['Items']) > 0:
@@ -147,7 +148,7 @@ def evaluate_model(
         }
 
     final_model = s3_client.get_object(
-        Bucket='bucket-registro-ct',
+        Bucket=BUCKET_NAME_MODEL,
         Key=f'pickles/model_{tag_value}.pkl')
     final_model = pickle.loads(final_model['Body'].read())
     logging.info('Model loaded successfully.')
@@ -199,7 +200,7 @@ def evaluate_model(
 
     # save the model register in dynamodb
     dynamodb = boto3.resource('dynamodb')
-    dynamo_table = dynamodb.Table('model-register')
+    dynamo_table = dynamodb.Table(DYNAMO_TABLE_TEST_MODEL)
 
     # insert the item with necessary fields to monitor model drift
     s3_url_confusion_matrix = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/extracted_at={current_date}/{output_confusion_matrix_image_path}"

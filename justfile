@@ -9,7 +9,7 @@ create-image-repo:
     cd repo-image && terraform init && terraform plan && terraform apply -auto-approve
 
 build-image:
-    cd functions/train_pipeline/ && docker build --pull --no-cache -t train-image .
+    cd functions/train_pipeline/ && docker build --platform linux/amd64 --pull --no-cache -t train-image .
 
 login-ecr:
     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_REPO
