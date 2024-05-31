@@ -32,8 +32,9 @@ qualitative_feat = config('QUALITATIVE_FEAT')
 entrega_doc_2_feat = config('ENTREGA_DOC_2_FEAT')
 entrega_doc_3_feat = config('ENTREGA_DOC_3_FEAT')
 pais_feat = config('PAIS_FEAT')
-quantitative_continue_feat = config('BUCKET_NAME_MODEL')
+quantitative_continue_feat = config('QUANTITATIVE_CONTINUE_FEAT')
 BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
+DYNAMO_TABLE_TRAIN_MODEL = config('DYNAMO_TABLE_TRAIN_MODEL')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = config('AWS_REGION')
@@ -339,7 +340,7 @@ def train_model(
 
     # save the model register in dynamodb
     dynamodb = boto3.resource('dynamodb')
-    dynamo_table = dynamodb.Table('model-register')
+    dynamo_table = dynamodb.Table(DYNAMO_TABLE_TRAIN_MODEL)
 
     # insert the item with necessary fields to monitor model drift
     s3_url_feature_importance = f"https://{BUCKET_NAME_MODEL}.s3.amazonaws.com/images/extracted_at={current_date}/{output_feature_importance_image_path}"
