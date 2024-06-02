@@ -20,10 +20,18 @@ RUN pip install poetry
 
 # Copiar os arquivos para o contêiner
 COPY pyproject.toml poetry.lock /app/
-RUN poetry install --no-root
 
-# Copiar o restante do código do projeto
-COPY . /app
+# Exportar as dependências para requirements.txt
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+# Instalar as dependências usando pip no diretório /var/task
+RUN pip install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
+
+# Copiar o restante do código do projeto para o diretório /var/task
+COPY . ${LAMBDA_TASK_ROOT}
+
+# Definir o diretório de trabalho como /var/task
+WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Rodar o script em questão
-CMD ["main_pipeline.py.lambda_handler"]
+CMD ["lambda_handler.lambda_handler"]
