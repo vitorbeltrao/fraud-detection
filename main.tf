@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "ct-fraud-detection-bucket "
+        bucket = "ct-fraud-detection-bucket"
         key    = "train-pipeline/terraform.tfstate"
         region = "us-east-1"
     }
@@ -29,7 +29,7 @@ resource "aws_iam_policy" "policy_ct_lambda" {
       {
         Action   = "lambda:InvokeFunction",
         Effect   = "Allow",
-        Resource = aws_lambda_function.funcao_ct.arn,
+        Resource = aws_lambda_function.ct_function.arn,
       },
     ],
   })
@@ -80,7 +80,7 @@ resource "aws_s3_bucket" "fraud_data_bucket" {
 }
 
 #### S3: bucket para o registro de modelos ####
-resource "aws_s3_bucket" "model_bucket" {
+resource "aws_s3_bucket" "fraud_model_bucket" {
   bucket = "ct-fraud-modelregister-bucket"
 }
 
@@ -95,8 +95,8 @@ resource "aws_iam_policy" "s3_access_policy" {
         Action   = ["s3:GetObject", "s3:PutObject"],
         Effect   = "Allow",
         Resource = [
-          "${aws_s3_bucket.data_bucket.arn}/*",
-          "${aws_s3_bucket.model_bucket.arn}/*",
+          "${aws_s3_bucket.fraud_data_bucket.arn}/*",
+          "${aws_s3_bucket.fraud_model_bucket.arn}/*",
         ],
       },
     ],
@@ -183,8 +183,8 @@ resource "aws_iam_policy" "policy_access_dynamodb" {
         ],
         Effect   = "Allow",
         Resource = [
-          aws_dynamodb_table.ct-fraud-model-train-register.arn,
-          aws_dynamodb_table.ct-fraud-model-test-register.arn
+          aws_dynamodb_table.fraud_train_model_register.arn,
+          aws_dynamodb_table.fraud_test_model_register.arn
         ]
       },
     ],
@@ -203,21 +203,21 @@ resource "aws_iam_role_policy_attachment" "ct_fraud_dynamodb_policy" {
 resource "aws_lambda_permission" "lambda_cloudwatch_permission" {
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.function_ct.function_name
+  function_name = aws_lambda_function.ct_function.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.lambda_agendamento.arn
+  source_arn    = aws_cloudwatch_event_rule.lambda_scheduler.arn
 }
 
 # Define uma regra para o CloudWatch
-resource "aws_cloudwatch_event_rule" "lambda_agendamento" {
-  name        = "agendamento-ct"
+resource "aws_cloudwatch_event_rule" "lambda_scheduler" {
+  name        = "ct-fraud-scheduler"
   description = "Scheduled rule to trigger Lambda function"
   schedule_expression = "cron(0 0 ? * SUN *)"  # a cada domingo, meia noite
 }
 
 # Define um target para a regra
 resource "aws_cloudwatch_event_target" "lambda_target" {
-  rule      = aws_cloudwatch_event_rule.lambda_agendamento.name
+  rule      = aws_cloudwatch_event_rule.lambda_scheduler.name
   target_id = "invoke-lambda"
-  arn       = aws_lambda_function.function_ct.arn
+  arn       = aws_lambda_function.ct_function.arn
 }
