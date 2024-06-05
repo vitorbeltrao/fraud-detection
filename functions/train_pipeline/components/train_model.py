@@ -16,28 +16,25 @@ import timeit
 import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
-from decouple import config
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import make_pipeline, Pipeline
-from imblearn.under_sampling import RandomUnderSampler
+from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.calibration import calibration_curve
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
 
 # config
-qualitative_feat = config('QUALITATIVE_FEAT')
-entrega_doc_2_feat = config('ENTREGA_DOC_2_FEAT')
-entrega_doc_3_feat = config('ENTREGA_DOC_3_FEAT')
-pais_feat = config('PAIS_FEAT')
-quantitative_continue_feat = config('QUANTITATIVE_CONTINUE_FEAT')
-BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
-DYNAMO_TABLE_TRAIN_MODEL = config('DYNAMO_TABLE_TRAIN_MODEL')
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = config('AWS_REGION')
+BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
+DYNAMO_TABLE_TRAIN_MODEL = os.environ['DYNAMO_TABLE_TRAIN_MODEL']
+qualitative_feat = ['score_1', 'entrega_doc_1']
+entrega_doc_2_feat = ['entrega_doc_2']
+entrega_doc_3_feat = ['entrega_doc_3']
+pais_feat = ['pais']
+quantitative_continue_feat = ['score_4', 'score_9', 'score_10', 'valor_compra']
 
 logging.basicConfig(
     level=logging.INFO,
@@ -235,15 +232,8 @@ def train_model(
     # Get the current date
     current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    # create a session with AWS credentials
-    session = boto3.Session(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION
-    )
-
     # create a client instance for S3
-    s3_client = session.client('s3')
+    s3_client = boto3.client('s3')
     logging.info('S3 authentication was created successfully.')
 
     # divide data into train and test to avoid data snooping bias

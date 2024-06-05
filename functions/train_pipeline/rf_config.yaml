@@ -1,19 +1,11 @@
 param_grid:
   ml_model__n_estimators:
     - 150
-    - 250
-    - 350
   ml_model__max_depth:
     - 8
-    - 9
-    - null
   under__sampling_strategy:
     - auto
     - 0.5
-    - 0.7
-    - 0.8
-    - 0.9
-    - 1.0
 
 # Load yaml file configuration
 # import yaml

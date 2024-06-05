@@ -9,16 +9,13 @@ Date: May/2024
 import logging
 import boto3
 import yaml
+import os
 import pandas as pd
-from decouple import config
 from components.train_model import train_model
 from components.test_model import evaluate_model
 
 # config
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = config('AWS_REGION')
-BUCKET_NAME_DATA = config('BUCKET_NAME_DATA')
+BUCKET_NAME_DATA = os.environ['BUCKET_NAME_DATA']
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,20 +29,12 @@ def lambda_handler(event, context):
     machine learning model using data from an S3 bucket.
     '''
 
-    # create a session with AWS credentials
-    session = boto3.Session(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION
-    )
-
     # create a client instance for S3
-    s3_client = session.client('s3')
+    s3_client = boto3.client('s3')
     logging.info('S3 authentication was created successfully.')
 
     # get the dataset to feed the train and test function
-    data_directory = f'dataset.csv'
-    obj = s3_client.get_object(Bucket=BUCKET_NAME_DATA, Key=data_directory)
+    obj = s3_client.get_object(Bucket=BUCKET_NAME_DATA, Key='dataset.csv')
     dataset = pd.read_csv(obj['Body'])
     logging.info('Dataset loaded successfully.\n')
 
