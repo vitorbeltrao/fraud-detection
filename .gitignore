@@ -164,3 +164,4 @@ cython_debug/
 /prototype_notebooks/mlruns
 .config
 .terraform/
+terraform.tfvars

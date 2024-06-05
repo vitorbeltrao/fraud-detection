@@ -12,20 +12,17 @@ import pickle
 import boto3
 import json
 import datetime
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from decouple import config
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score, f1_score, brier_score_loss, confusion_matrix, roc_auc_score, RocCurveDisplay
 
 # config
-BUCKET_NAME_MODEL = config('BUCKET_NAME_MODEL')
-DYNAMO_TABLE_TRAIN_MODEL = config('DYNAMO_TABLE_TRAIN_MODEL')
-DYNAMO_TABLE_TEST_MODEL = config('DYNAMO_TABLE_TEST_MODEL')
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = config('AWS_REGION')
+BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
+DYNAMO_TABLE_TRAIN_MODEL = os.environ['DYNAMO_TABLE_TRAIN_MODEL']
+DYNAMO_TABLE_TEST_MODEL = os.environ['DYNAMO_TABLE_TEST_MODEL']
 
 logging.basicConfig(
     level=logging.INFO,
@@ -117,15 +114,8 @@ def evaluate_model(
     # Get the current date
     current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    # create a session with AWS credentials
-    session = boto3.Session(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION
-    )
-
     # create a client instance for S3
-    s3_client = session.client('s3')
+    s3_client = boto3.client('s3')
     logging.info('S3 authentication was created successfully.')
 
     # load the last trained model registered

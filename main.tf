@@ -10,6 +10,32 @@ provider "aws" {
   region = "us-east-1"
 }
 
+########### Referenciar as variaveis sensíveis ###########
+
+resource "aws_ssm_parameter" "bucket_name_data" {
+  name  = "/ct-function/BUCKET_NAME_DATA"
+  type  = "String"
+  value = var.bucket_name_data
+}
+
+resource "aws_ssm_parameter" "bucket_name_model" {
+  name  = "/ct-function/BUCKET_NAME_MODEL"
+  type  = "String"
+  value = var.bucket_name_model
+}
+
+resource "aws_ssm_parameter" "dynamo_table_train_model" {
+  name  = "/ct-function/DYNAMO_TABLE_TRAIN_MODEL"
+  type  = "String"
+  value = var.dynamo_table_train_model
+}
+
+resource "aws_ssm_parameter" "dynamo_table_test_model" {
+  name  = "/ct-function/DYNAMO_TABLE_TEST_MODEL"
+  type  = "String"
+  value = var.dynamo_table_test_model
+}
+
 # 1. PIPELINE DE TREINO
 
 ###### Lambda ######
@@ -43,11 +69,18 @@ resource "aws_lambda_function" "ct_function" {
   memory_size   = 300 # MB
   role          = aws_iam_role.ct_role.arn
   architectures = ["x86_64"]
+  environment {
+    variables = {
+      BUCKET_NAME_DATA           = aws_ssm_parameter.bucket_name_data.value
+      BUCKET_NAME_MODEL          = aws_ssm_parameter.bucket_name_model.value
+      DYNAMO_TABLE_TRAIN_MODEL   = aws_ssm_parameter.dynamo_table_train_model.value
+      DYNAMO_TABLE_TEST_MODEL    = aws_ssm_parameter.dynamo_table_test_model.value
+    }
+  }
   logging_config {
     log_format = "Text"
-    log_group = aws_cloudwatch_log_group.lambda_logs.name
+    log_group  = aws_cloudwatch_log_group.lambda_logs.name
   }
-
 }
 
 # Define um IAM role para a Lambda
