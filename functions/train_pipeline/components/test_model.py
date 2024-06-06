@@ -14,10 +14,12 @@ import json
 import datetime
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score, f1_score, brier_score_loss, confusion_matrix, roc_auc_score, RocCurveDisplay
+os.makedirs('/tmp/matplotlib', exist_ok=True)
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
+import matplotlib.pyplot as plt
 
 # config
 BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
