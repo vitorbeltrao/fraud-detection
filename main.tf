@@ -63,10 +63,10 @@ resource "aws_iam_policy" "policy_ct_lambda" {
 
 resource "aws_lambda_function" "ct_function" {
   function_name = "ct-function"
-  timeout       = 100 # seconds
+  timeout       = 300 # seconds
   image_uri     = "${data.aws_ecr_repository.ct_repo_image.repository_url}:latest"
   package_type  = "Image"
-  memory_size   = 300 # MB
+  memory_size   = 512 # MB
   role          = aws_iam_role.ct_role.arn
   architectures = ["x86_64"]
   environment {

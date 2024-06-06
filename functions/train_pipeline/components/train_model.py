@@ -15,7 +15,6 @@ import json
 import timeit
 import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
@@ -26,6 +25,9 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.calibration import calibration_curve
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
+os.makedirs('/tmp/matplotlib', exist_ok=True)
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
+import matplotlib.pyplot as plt
 
 # config
 BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
