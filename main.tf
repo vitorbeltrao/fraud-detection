@@ -157,6 +157,7 @@ resource "aws_iam_policy" "ct_cloudwatch_policy" {
     "Statement" : [
       {
         Action : [
+          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],

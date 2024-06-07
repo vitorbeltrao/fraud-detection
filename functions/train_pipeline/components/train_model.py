@@ -25,6 +25,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.calibration import calibration_curve
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
+from decimal import Decimal
 os.makedirs('/tmp/matplotlib', exist_ok=True)
 os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
 import matplotlib.pyplot as plt
@@ -40,6 +41,7 @@ quantitative_continue_feat = ['score_4', 'score_9', 'score_10', 'valor_compra']
 
 logging.basicConfig(
     level=logging.INFO,
+    force=True,
     filemode='w',
     format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s')
 
@@ -144,10 +146,8 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path) -> None:
         None
     '''
     # Importance based on each tree
-    global_exp = pd.DataFrame()
-
-    for i in range(model.n_estimators):
-        global_exp[f'tree_{i+1}'] = model.estimators_[i].feature_importances_
+    global_exp = pd.DataFrame([tree.feature_importances_ for tree in model.estimators_]).T
+    global_exp.columns = [f'tree_{i+1}' for i in range(model.n_estimators)]
 
     # Set the feature names as indices of the DataFrame
     global_exp.index = preprocessor.get_feature_names_out()
@@ -157,8 +157,7 @@ def feature_importance_rf_plot(model, preprocessor, output_image_path) -> None:
 
     # Sort the DataFrame by the 'importance' column in descending order and
     # plot it
-    global_exp_sorted = global_exp.sort_values(
-        by='importance', ascending=False)
+    global_exp_sorted = global_exp.sort_values(by='importance', ascending=False)
     plt.figure(figsize=(10, 6))
     plt.bar(global_exp_sorted.index, global_exp_sorted['importance'])
     plt.ylabel("Feature importance")
@@ -293,14 +292,13 @@ def train_model(
     best_ml_model = grid_search.best_estimator_.named_steps['ml_model']
     preprocessor = grid_search.best_estimator_.named_steps['preprocessor']
     output_feature_importance_image_path = f'feature_importance_{final_model_sha}.png'
-
     images_feature_importance_directory = f'images/extracted_at={current_date}/{output_feature_importance_image_path}'
     feature_importance_rf_plot(
         best_ml_model,
         preprocessor,
-        output_feature_importance_image_path)
+        '/tmp/' + output_feature_importance_image_path)
     s3_client.upload_file(
-        output_feature_importance_image_path,
+        '/tmp/' + output_feature_importance_image_path,
         BUCKET_NAME_MODEL,
         images_feature_importance_directory)
     logging.info('Model interpretation image was inserted into bucket.')
@@ -309,14 +307,13 @@ def train_model(
     logging.info('Displaying model calibration...')
     output_calibration_curve_image_path = f'calibration_curve_{final_model_sha}.png'
     images_calibration_curve_directory = f'images/extracted_at={current_date}/{output_calibration_curve_image_path}'
-
     plot_calibration_curve(
         final_model,
         X,
         y,
-        output_calibration_curve_image_path)
+        '/tmp/' + output_calibration_curve_image_path)
     s3_client.upload_file(
-        output_calibration_curve_image_path,
+        '/tmp/' + output_calibration_curve_image_path,
         BUCKET_NAME_MODEL,
         images_calibration_curve_directory)
     logging.info('Model calibration image was inserted into bucket.')
@@ -342,7 +339,7 @@ def train_model(
         'id': int(pd.Timestamp.now().timestamp()),
         'publication_date': pd.Timestamp.now().isoformat(),
         'tag': final_model_sha,
-        'train_time': timing,
+        'train_time': Decimal(str(timing)),
         'metrics': json.dumps(best_metrics),
         'feature_importance_url': s3_url_feature_importance,
         'model_calibration_url': s3_url_model_calibration,
