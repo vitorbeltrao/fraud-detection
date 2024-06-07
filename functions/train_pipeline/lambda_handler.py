@@ -19,6 +19,7 @@ BUCKET_NAME_DATA = os.environ['BUCKET_NAME_DATA']
 
 logging.basicConfig(
     level=logging.INFO,
+    force=True,
     filemode='w',
     format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s')
 

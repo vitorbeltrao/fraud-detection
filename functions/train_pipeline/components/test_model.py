@@ -17,6 +17,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score, f1_score, brier_score_loss, confusion_matrix, roc_auc_score, RocCurveDisplay
+from decimal import Decimal
 os.makedirs('/tmp/matplotlib', exist_ok=True)
 os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
 import matplotlib.pyplot as plt
@@ -28,6 +29,7 @@ DYNAMO_TABLE_TEST_MODEL = os.environ['DYNAMO_TABLE_TEST_MODEL']
 
 logging.basicConfig(
     level=logging.INFO,
+    force=True,
     filemode='w',
     format='%(asctime)-15s - %(name)s - %(levelname)s - %(message)s')
 
@@ -49,9 +51,9 @@ def confusion_matrix_plot(y_true, y_pred, output_image_path) -> None:
 
     # Plot the confusion matrix
     sns.heatmap(cm, annot=True, cmap='Blues', fmt='.2f')
-    plt.title("Confusion Matrix")
-    plt.ylabel("True Label")
-    plt.xlabel("Predicted Label")
+    plt.title('Confusion Matrix')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
 
     # Adjust the layout to prevent cutting off elements
     plt.tight_layout()
@@ -141,7 +143,7 @@ def evaluate_model(
 
     final_model = s3_client.get_object(
         Bucket=BUCKET_NAME_MODEL,
-        Key=f'pickles/model_{tag_value}.pkl')
+        Key=f'pickles/extracted_at={current_date}/model_{tag_value}.pkl')
     final_model = pickle.loads(final_model['Body'].read())
     logging.info('Model loaded successfully.')
 
@@ -169,9 +171,9 @@ def evaluate_model(
     confusion_matrix_plot(
         y_test,
         final_predictions,
-        output_confusion_matrix_image_path)
+        '/tmp/' + output_confusion_matrix_image_path)
     s3_client.upload_file(
-        output_confusion_matrix_image_path,
+        '/tmp/' + output_confusion_matrix_image_path,
         BUCKET_NAME_MODEL,
         images_confusion_matrix_directory)
     logging.info('Confusion matrix image was inserted into bucket.')
@@ -183,9 +185,9 @@ def evaluate_model(
         final_model,
         X_test,
         y_test,
-        output_confusion_matrix_image_path)
+        '/tmp/' + output_rocauc_image_path)
     s3_client.upload_file(
-        output_rocauc_image_path,
+        '/tmp/' + output_rocauc_image_path,
         BUCKET_NAME_MODEL,
         images_rocauc_directory)
     logging.info('Roc curve image was inserted into bucket.')
@@ -201,10 +203,10 @@ def evaluate_model(
     dynamo_table.put_item(Item={
         'id': int(pd.Timestamp.now().timestamp()),
         'publication_date': pd.Timestamp.now().isoformat(),
-        'test_balanced_accuracy': test_accuracy,
-        'test_f1': test_f1,
-        'test_brier': test_brier,
-        'test_roc_auc': test_roc_auc,
+        'test_balanced_accuracy': Decimal(str(test_accuracy)),
+        'test_f1': Decimal(str(test_f1)),
+        'test_brier': Decimal(str(test_brier)),
+        'test_roc_auc': Decimal(str(test_roc_auc)),
         'confusion_matrix_url': s3_url_confusion_matrix,
         'rocauc_url': s3_url_rocauc,
     })
