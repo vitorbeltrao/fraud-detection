@@ -30,7 +30,7 @@ deploy:
     sh deploy.sh
     
 deploy-monitoring:
-    cd monitoramento/ && terraform init && terraform plan && terraform apply -auto-approve
+    cd monitoring_system/ && terraform init && terraform plan && terraform apply -auto-approve
 
 destroy:
-    cd monitoramento/ && terraform init && terraform destroy -auto-approve && cd .. && terraform destroy -auto-approve && cd repo-imagem/ && terraform destroy -auto-approve
+    cd monitoring_system/ && terraform init && terraform destroy -auto-approve && cd .. && terraform destroy -auto-approve && cd repo-imagem/ && terraform destroy -auto-approve
