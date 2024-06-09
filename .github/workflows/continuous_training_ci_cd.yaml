@@ -1,8 +1,10 @@
 name: deploy-continuous-training
 
 on:
-  # push:
-  #   branches: [ "master" ]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
     
   
