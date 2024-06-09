@@ -14,7 +14,6 @@ seaborn = "^0.13.2"
 imbalanced-learn = "^0.12.2"
 pytest = "^8.2.0"
 boto3 = "^1.34.106"
-python-decouple = "^3.8"
 ml-insights = "^1.0.3"
 
 
