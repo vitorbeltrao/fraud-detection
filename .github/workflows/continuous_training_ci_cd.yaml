@@ -15,7 +15,7 @@ jobs:
       - uses: extractions/setup-just@v1
       - name: Install pytest
         run: pip install pytest
-      - name: Instalar Ruff
+      - name: Install Ruff
         run: pip install ruff
       - name: lint
         run: just lint

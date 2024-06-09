@@ -1,7 +1,7 @@
 set dotenv-load
 
 lint:
-    ruff check python
+    ruff check functions
 test:
     pytest tests/
 
