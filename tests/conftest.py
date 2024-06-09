@@ -33,7 +33,7 @@ def data():
     logging.info('S3 authentication was created successfully.')
 
     # Read the raw data from S3, selecting only desired columns
-    obj = s3_client.get_object(Bucket='ct-fraud-data-bucket ', Key='dataset.csv')
+    obj = s3_client.get_object(Bucket='ct-fraud-data-bucket', Key='dataset.csv')
     df = pd.read_csv(obj['Body'])
     logging.info('Data from s3 folder was fetched successfully.')
     return df
