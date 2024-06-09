@@ -1,0 +1,40 @@
+name: deploy-continuous-training
+
+on:
+  # push:
+  #   branches: [ "master" ]
+  workflow_dispatch:
+    
+  
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: extractions/setup-just@v1
+      - name: Install pytest
+        run: pip install pytest
+      - name: Instalar Ruff
+        run: pip install ruff
+      - name: lint
+        run: just lint
+      - name: Tests
+        run: just test
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: extractions/setup-just@v1
+      - name: Configure AWS Credentials Action For GitHub Actions
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v2.0.2
+      - name: deploy
+        run: just deploy

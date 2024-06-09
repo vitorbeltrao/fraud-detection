@@ -3,7 +3,7 @@ set dotenv-load
 lint:
     ruff check python
 test:
-    pytest testes/
+    pytest tests/
 
 create-image-repo:
     cd repo-image && terraform init && terraform plan && terraform apply -auto-approve
