@@ -1,7 +1,7 @@
 set dotenv-load
 
 lint:
-    ruff functions/train_pipeline/components
+    flake8 functions
 test:
     pytest tests/
 
