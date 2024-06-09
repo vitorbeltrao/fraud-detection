@@ -29,6 +29,10 @@ resource "aws_cloudwatch_dashboard" "ct_fraud_dashboard_lambda" {
                                 properties = {
                                         metrics = [
                                                 ["AWS/Lambda", "Duration", "FunctionName", data.aws_lambda_function.lambda.function_name, { "stat": "Average", "period": 300 }],
+                                                ["AWS/Lambda", "Invocations", "FunctionName", data.aws_lambda_function.lambda.function_name, { "stat": "Sum", "period": 300 }],
+                                                ["AWS/Lambda", "Errors", "FunctionName", data.aws_lambda_function.lambda.function_name, { "stat": "Sum", "period": 300 }],
+                                                ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", data.aws_lambda_function.lambda.function_name, { "stat": "Maximum", "period": 300 }],
+                                                ["AWS/Lambda", "Throttles", "FunctionName", data.aws_lambda_function.lambda.function_name, { "stat": "Sum", "period": 300 }]
                                         ],
                                         view = "timeSeries",
                                         stacked = false,
