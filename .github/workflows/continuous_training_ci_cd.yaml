@@ -15,8 +15,8 @@ jobs:
       - uses: extractions/setup-just@v1
       - name: Install pytest
         run: pip install pytest
-      - name: Install Ruff
-        run: pip install ruff
+      - name: Install flake8
+        run: pip install flake8
       - name: lint
         run: just lint
       - name: Tests
