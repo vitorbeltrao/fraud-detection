@@ -7,6 +7,7 @@ Date: May/2024
 
 # import necessary packages
 import pandas as pd
+import numpy as np
 import scipy.stats
 
 # DETERMINISTIC TESTS
@@ -64,7 +65,7 @@ def test_entries_values(data):
     assert set(known_doc1_entries) == set(doc1_column)
 
     # 3. entrega_doc_2
-    known_doc2_entries = ['Y', 'N']
+    known_doc2_entries = ['Y', 'N', np.nan]
     doc2_column = set(data.entrega_doc_2.unique())
     assert set(known_doc2_entries) == set(doc2_column)
 
@@ -75,5 +76,5 @@ def test_entries_values(data):
 
     # label
     known_label_entries = [0, 1]
-    label_column = set(data.exited.unique())
+    label_column = set(data.fraude.unique())
     assert set(known_label_entries) == set(label_column)
