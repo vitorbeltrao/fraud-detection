@@ -21,6 +21,10 @@ jobs:
           pip install flake8 pytest poetry
           poetry export -f requirements.txt --output requirements.txt --without-hashes
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Set up environment variables for pytest
+        run: |
+          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: lint
         run: just lint || true
       - name: Tests
