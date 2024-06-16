@@ -4,23 +4,37 @@
 just create-image-repo
 
 # Construir a imagem do container
-just build-image
+just build-train-image
 
 # Fazer login no AWS ECR
 just login-ecr
 
 # Adicionar uma tag à imagem do container
-just tag-image
+just tag-train-image
 
 # Enviar a imagem do container para o ECR
-just push-image
+just push-train-image
 
 # Fazer o deploy da infraestrutura com o Terraform
 just deploy-ct-infra
 
 # Atualizar a função lambda com a nova imagem
-just modify-lambda-image
+just modify-train-lambda-image
 
 # Deploy Monitoramento
 just deploy-monitoring
 
+# Construir a imagem do container
+just build-inference-image
+
+# Adicionar uma tag à imagem do container
+just tag-inference-image
+
+# Enviar a imagem do container para o ECR
+just push-inference-image
+
+# Fazer o deploy da infraestrutura com o Terraform
+just deploy-inference-infra
+
+# Atualizar a função lambda com a nova imagem
+just modify-inference-lambda-image
