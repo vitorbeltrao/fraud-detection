@@ -14,3 +14,7 @@ provider "aws" {
 resource "aws_ecr_repository" "repo-image" {
     name = "train-image"
 }
+
+resource "aws_ecr_repository" "repo-inference-image" {
+    name = "inference-image"
+}
