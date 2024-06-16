@@ -13,6 +13,7 @@ import boto3
 import logging
 import datetime
 import pandas as pd
+from components.train_model import train_model
 
 # config
 BUCKET_NAME_DATA = os.environ['BUCKET_NAME_DATA']

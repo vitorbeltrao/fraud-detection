@@ -8,7 +8,11 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 pandas = "^2.2.2"
+seaborn = "^0.13.2"
+imbalanced-learn = "^0.12.2"
+pytest = "^8.2.0"
 boto3 = "^1.34.106"
+pyyaml = "^6.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
