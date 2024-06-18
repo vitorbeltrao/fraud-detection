@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
-    
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -44,19 +44,10 @@ jobs:
           aws-region: us-east-1
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2.0.2
-      - name: Terraform Init
-        run: terraform init
-      - name: Terraform Apply
+      - name: deploy
         env:
           BUCKET_NAME_DATA: ${{ secrets.BUCKET_NAME_DATA }}
           BUCKET_NAME_MODEL: ${{ secrets.BUCKET_NAME_MODEL }}
           DYNAMO_TABLE_TRAIN_MODEL: ${{ secrets.DYNAMO_TABLE_TRAIN_MODEL }}
           DYNAMO_TABLE_TEST_MODEL: ${{ secrets.DYNAMO_TABLE_TEST_MODEL }}
-        run: |
-          terraform apply -auto-approve \
-            -var "bucket_name_data=${{ secrets.BUCKET_NAME_DATA }}" \
-            -var "bucket_name_model=${{ secrets.BUCKET_NAME_MODEL }}" \
-            -var "dynamo_table_train_model=${{ secrets.DYNAMO_TABLE_TRAIN_MODEL }}" \
-            -var "dynamo_table_test_model=${{ secrets.DYNAMO_TABLE_TEST_MODEL }}"
-      - name: deploy
         run: just deploy
