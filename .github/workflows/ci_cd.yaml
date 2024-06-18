@@ -1,4 +1,4 @@
-name: deploy-continuous-training
+name: deploy-fraud-system
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
-    
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -45,10 +45,9 @@ jobs:
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2.0.2
       - name: Terraform Init
-        working-directory: ./terraform
         run: terraform init
-      - name: Terraform Apply
         working-directory: ./terraform
+      - name: Terraform Apply
         env:
           BUCKET_NAME_DATA: ${{ secrets.BUCKET_NAME_DATA }}
           BUCKET_NAME_MODEL: ${{ secrets.BUCKET_NAME_MODEL }}
@@ -60,5 +59,7 @@ jobs:
             -var "bucket_name_model=${{ secrets.BUCKET_NAME_MODEL }}" \
             -var "dynamo_table_train_model=${{ secrets.DYNAMO_TABLE_TRAIN_MODEL }}" \
             -var "dynamo_table_test_model=${{ secrets.DYNAMO_TABLE_TEST_MODEL }}"
+        working-directory: ./terraform
       - name: deploy
         run: just deploy
+        working-directory: ./terraform
