@@ -21,7 +21,7 @@ push-train-image:
     docker push $AWS_ECR_TRAIN_REPO
 
 deploy-ct-infra:
-    terraform init && terraform plan && terraform apply -auto-approve
+    cd continuous_training_system && terraform init && terraform plan && terraform apply -auto-approve
 
 modify-train-lambda-image:
     aws lambda update-function-code --function-name $LAMBDA_FUNC_TRAIN_NAME --image-uri $AWS_ECR_TRAIN_REPO:latest
@@ -48,4 +48,4 @@ deploy:
     sh deploy.sh
 
 destroy:
-    cd monitoring_system/ && terraform init && terraform destroy -auto-approve && cd .. && terraform destroy -auto-approve && cd repo-imagem/ && terraform destroy -auto-approve && cd .. && cd inference_system/ && terraform destroy -auto-approve
+    cd monitoring_system/ && terraform init && terraform destroy -auto-approve && cd .. &&  cd inference_system/ && terraform destroy -auto-approve && cd .. && cd repo-imagem/ && terraform destroy -auto-approve && cd .. && cd inference_system/ && terraform destroy -auto-approve
