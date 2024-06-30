@@ -24,6 +24,12 @@ resource "aws_ssm_parameter" "bucket_name_model" {
   value = var.bucket_name_model
 }
 
+resource "aws_ssm_parameter" "bucket_name_data_drift" {
+  name  = "/ct-function/BUCKET_NAME_DATA_DRIFT"
+  type  = "String"
+  value = var.bucket_name_data_drift
+}
+
 resource "aws_ssm_parameter" "dynamo_table_train_model" {
   name  = "/ct-function/DYNAMO_TABLE_TRAIN_MODEL"
   type  = "String"
