@@ -18,3 +18,8 @@ variable "dynamo_table_test_model" {
   description = "DynamoDB table name for test model register"
   type        = string
 }
+
+variable "bucket_name_data_drift" {
+  description = "Bucket name for data drift register"
+  type        = string
+}
