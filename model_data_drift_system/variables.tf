@@ -25,6 +25,6 @@ variable "bucket_name_data_drift" {
 }
 
 variable "sns_topic_model_drift" {
-  description = "Sns topic to trigger the model retraining"
+  description = "SNS topic name for when model drift ocurrs"
   type        = string
 }

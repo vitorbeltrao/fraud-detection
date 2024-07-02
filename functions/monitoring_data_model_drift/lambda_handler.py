@@ -25,6 +25,7 @@ BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
 BUCKET_NAME_DATA_DRIFT = os.environ['BUCKET_NAME_DATA_DRIFT']
 DYNAMO_TABLE_TRAIN_MODEL = os.environ['DYNAMO_TABLE_TRAIN_MODEL']
 DYNAMO_TABLE_TEST_MODEL = os.environ['DYNAMO_TABLE_TEST_MODEL']
+SNS_TOPIC_ARN = os.environ['SNS_TOPIC_ARN']
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,14 +36,15 @@ logging.basicConfig(
 
 def lambda_handler(event, context):
     '''
-    AWS Lambda function handler for check model and data drift
+    AWS Lambda function handler for checking model and data drift
     '''
     # Get the current date
     current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    # create a client instance for S3
+    # create client instances for S3 and SNS
     s3_client = boto3.client('s3')
-    logging.info('S3 authentication was created successfully.\n')
+    sns_client = boto3.client('sns')
+    logging.info('S3 and SNS authentication were created successfully.\n')
 
     ########################### DATA DRIFT ###########################
     # concatenate all historical datasets
@@ -122,7 +124,24 @@ def lambda_handler(event, context):
     model_drift_result = final_model_drift_verify(hist_f1_test_scores, last_f1_test_score)
     logging.info('Model drift tested successfully.')
 
+    # Check if model drift occurred
+    if model_drift_result:
+        logging.info('Model drift detected. Publishing to SNS topic.')
+        message = {
+            'default': 'Model drift detected. Please check and retrain the model.',
+            'email': 'Model drift detected. The model needs to be retrained and redeployed.',
+            'lambda': 'Model drift detected, triggering retraining and redeployment.'
+        }
+        sns_response = sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=json.dumps(message),
+            Subject='Model Drift Alert',
+            MessageStructure='json'
+        )
+        logging.info('SNS topic published successfully.')
+        logging.info(f'SNS response: {sns_response}')
+
     return {
         'statusCode': 200,
-        'body': model_drift_result
+        'body': json.dumps(model_drift_result)
     }

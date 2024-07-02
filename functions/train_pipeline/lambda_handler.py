@@ -35,9 +35,18 @@ def lambda_handler(event, context):
     logging.info('S3 authentication was created successfully.')
 
     # get the dataset to feed the train and test function
-    obj = s3_client.get_object(Bucket=BUCKET_NAME_DATA, Key='dataset.csv')
-    dataset = pd.read_csv(obj['Body'])
-    logging.info('Dataset loaded successfully.\n')
+    response = s3_client.list_objects_v2(Bucket=BUCKET_NAME_DATA)
+    dataframes = []
+    for obj in response.get('Contents', []):
+        key = obj['Key']
+        if key.startswith('dataset') and key.endswith('.csv'):
+            logging.info(f'Reading {key} from S3 bucket.')
+            csv_obj = s3_client.get_object(Bucket=BUCKET_NAME_DATA, Key=key)
+            current_df = pd.read_csv(csv_obj['Body'])
+            dataframes.append(current_df)
+            logging.info(f'Dataset {key} loaded successfully.')
+    dataset = pd.concat(dataframes, ignore_index=True)
+    logging.info('All datasets have been concatenated into a single dataframe.')
 
     # load yaml file configuration
     with open('rf_config.yaml', 'r') as file:
