@@ -38,3 +38,21 @@ just deploy-inference-infra
 
 # Atualizar a função lambda com a nova imagem
 just modify-inference-lambda-image
+
+# Construir a imagem do container
+just build-model-data-drift-image
+
+# Adicionar uma tag à imagem do container
+just tag-model-data-drift-image
+
+# Enviar a imagem do container para o ECR
+just push-model-data-drift-image
+
+# Fazer o deploy da infraestrutura com o Terraform
+just deploy-model-data-drift-infra
+
+# Atualizar a função lambda com a nova imagem
+just modify-model-data-drift-lambda-image
+
+# Atualizar a função lambda com a nova imagem
+just modify-inference-lambda-image

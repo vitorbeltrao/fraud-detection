@@ -239,25 +239,33 @@ resource "aws_iam_role_policy_attachment" "ct_fraud_dynamodb_policy" {
 
 ###### Trigger ######
 
-# Permissao para a lambda ser invocada pelo CloudWatch
-resource "aws_lambda_permission" "lambda_cloudwatch_permission" {
-  statement_id  = "AllowExecutionFromCloudWatch"
+# Permissao para a lambda ser invocada pelo SNS
+resource "aws_lambda_permission" "lambda_sns_permission" {
+  statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ct_function.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.lambda_scheduler.arn
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.lambda_sns_topic.arn
 }
 
-# Define uma regra para o CloudWatch
-resource "aws_cloudwatch_event_rule" "lambda_scheduler" {
-  name        = "ct-fraud-scheduler"
-  description = "Scheduled rule to trigger Lambda function"
-  schedule_expression = "cron(0 0 ? * SUN *)"  # a cada domingo, meia noite
+# Define o tópico SNS
+resource "aws_sns_topic" "lambda_sns_topic" {
+  name = "ct-fraud-model-drift-sns-topic"
 }
 
-# Define um target para a regra
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  rule      = aws_cloudwatch_event_rule.lambda_scheduler.name
-  target_id = "invoke-lambda"
-  arn       = aws_lambda_function.ct_function.arn
+# Adiciona uma assinatura para invocar a Lambda a partir do tópico SNS
+resource "aws_sns_topic_subscription" "lambda_sns_subscription" {
+  topic_arn = aws_sns_topic.lambda_sns_topic.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.ct_function.arn
+
+  # Dependência explícita para garantir que a permissão seja criada antes da assinatura
+  depends_on = [aws_lambda_permission.lambda_sns_permission]
+}
+
+# Cria uma assinatura para o tópico SNS para enviar um email
+resource "aws_sns_topic_subscription" "email_sns_subscription" {
+  topic_arn = aws_sns_topic.lambda_sns_topic.arn
+  protocol  = "email"
+  endpoint  = "vitorbeltrao300@gmail.com"
 }

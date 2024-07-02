@@ -18,3 +18,7 @@ resource "aws_ecr_repository" "repo-image" {
 resource "aws_ecr_repository" "repo-inference-image" {
     name = "inference-image"
 }
+
+resource "aws_ecr_repository" "repo-model-data-drift-image" {
+    name = "model-data-drift-image"
+}
