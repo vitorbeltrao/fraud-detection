@@ -17,7 +17,7 @@ In the current financial landscape, banks must not only acquire new customers bu
 
 To carry out the project, it was necessary an architecture that met the low budget, in addition to being functional and scalable. Therefore, we use the architecture below:
 
-![Fraud Detection Archutecture](https://github.com/vitorbeltrao/Pictures/blob/main/fraud_architecture.jpg?raw=true)
+![Fraud Detection Architecture](https://github.com/vitorbeltrao/Pictures/blob/main/fraud_data_architecture.jpg?raw=true)
 ***
 
 ## Files Description <a name="files"></a>
@@ -31,6 +31,8 @@ In "fraud-detection" repository we have:
 * **functions**: Inside this folder are the model's training and inference codes. Everything related to Python codes, containerization with Docker, virtual environments and lambda functions is inside this folder.
 
 * **inference_system**: Inside this folder, we have the entire infrastructure as code of the pipeline inference stage, which you can see in the architecture image. This file is responsible for creating all instances in AWS for this inference step.
+
+* **model_data_drift_system**: Inside this folder, we have the entire infrastructure as code of the pipeline inference stage, which you can see in the architecture image. This file is responsible for creating all instances in AWS for this model and data drift step.
 
 * **monitoring_system**: Inside this folder we have the entire infrastructure as code for system monitoring of lambda functions, which you can see in the architecture image. This file is responsible for creating all instances in AWS for this system monitoring step.
 
@@ -47,39 +49,9 @@ In "fraud-detection" repository we have:
 * **model_card.md file**: Documentation of the created machine learning model.
 ***
 
-## Running Files <a name="running"></a>
-
-### Clone the repository
-
-Go to [risk_assessment](https://github.com/vitorbeltrao/risk_assessment) and click on Fork in the upper right corner. This will create a fork in your Github account, i.e., a copy of the repository that is under your control. Now clone the repository locally so you can start working on it:
-
-`git clone https://github.com/[your_github_username]/risk_assessment.git`
-
-and go into the repository:
-
-`cd risk_assessment`
-
-### Create the environment
-
-Make sure to have conda installed and ready, then create a new environment using the *environment.yaml* file provided in the root of the repository and activate it. This file contain list of module needed to run the project:
-
-`conda env create -f environment.yaml`
-`conda activate risk_assessment`
-
-### Create an account in AWS
-
-
-### The configuration
-
-The parameters controlling the pipeline are defined in the `config.yaml` file defined in the root of the repository. We will use Hydra to manage this configuration file.
-
-Open this file and get familiar with its content. Remember: this file is only read by the `main.py` script (i.e., the pipeline) and its content is available with the `go` function in `main.py` as the `config` dictionary. For example, the name of the project is contained in the `project_name` key under the `main` section in the configuration file. It can be accessed from the `go` function as `config["main"]["project_name"]`.
-
 ## Using the API <a name="api"></a>
 
-To check the application documentation follow the [link](https://risk-assessment-system.onrender.com/docs)
-
-The url to the endpoint for making API requests is: https://risk-assessment-system.onrender.com/risk_assessment_prediction
+In progress...
 ***
 
 ## Model and Data Diagnostics <a name="diagnostics"></a>
@@ -96,36 +68,40 @@ If your model begins to perform worse than it had before, then you're a victim o
 
 The file containing the detailed evaluation metrics, including the historical records of the test data evaluation, to verify the model drift, are being detailed in the [model card](https://github.com/vitorbeltrao/risk_assessment/blob/main/model_card.md).
 
-In the *model_data_diagnostics* folder, we create the scripts that check the model drift through three functions: *Raw Comparison Test*, *Parametric Significance Test* and *Non-Parametric Outlier Test*. For more information on what each of these tests does, visit the respective folder with the scripts and see the documentation for the functions.
+In the *functions/monitoring_data_model_drift* folder, we create the scripts that check the model drift through three functions: *Raw Comparison Test*, *Parametric Significance Test* and *Non-Parametric Outlier Test*. For more information on what each of these tests does, visit the respective folder with the scripts and see the documentation for the functions.
 
-Finally, after testing these three functions that verify the model drift, we choose by voting whether the model suffered model drift or not, that is, if two of these functions show model drift, then we have model drift and vice versa. If we don't have model drift, then we keep the current model in production; if we have model drift then we must retrain and re-deploy the model. **Our system automatically sends an email to the person in charge, in case the model drift occurs!**
+Finally, after testing these three functions that verify the model drift, we choose by voting whether the model suffered model drift or not, that is, if two of these functions show model drift, then we have model drift and vice versa. If we don't have model drift, then we keep the current model in production; if we have model drift then we must retrain and re-deploy the model. 
+
+**Our system automatically fires a trigger with an SNS Topic to automatically retrain the model!**
+
+**Our system automatically sends an email to the person in charge, in case the model drift occurs!**
 
 ### Data Drift
 
 Data drift also happens at regular intervals. We have a reference dataset, which was the first dataset that we trained, validated and tested the model before going into production and everything went well on that dataset. Over time, more data enters the data lake and the idea here is to compare the entire historical dataset (reference + new data coming in regularly) with the reference dataset that was the first one we trained.
 
-To make this comparison, we used an open source library that is [Evidently](https://www.evidentlyai.com/). For more information read the documentation at the highlighted link. Finally, we generate HTML files with the entire report on the data drift for the user, which you can find in the [folder](https://github.com/vitorbeltrao/risk_assessment/tree/main/model_data_diagnostics) where we are checking the diagnostics.
+To make this comparison, we used an open source library that is [Evidently](https://www.evidentlyai.com/). For more information read the documentation at the highlighted link. Finally, we generate HTML files with the entire report on the data drift for the user stored in a S3 bucket.
 ***
 
 ## Orchestration <a name="orchestration"></a>
 
-The orchestration of this project is done automatically by lambdas, with the help of the **EventBridge: Scheduler instance**. The project runs 1x per week, which is the frequency with which new data arrives at the source.
+The orchestration of this project is done automatically by lambdas, with the help of the **EventBridge: Scheduler instance** and **SNS Topic**.
 
 **With that, we have a model working almost 100% automatically without much manual intervention on the part of those responsible. Of course, it is recommended that sometimes those responsible take a look at the reports, to verify that everything is fine**.
 ***
 
 ## Licensing and Author <a name="licensingandauthors"></a>
 
-Vítor Beltrão - Data Scientist
+Vítor Beltrão - Data Scientist / Machine Learning Engineer
 
 Reach me at: 
 
 - vitorbeltraoo@hotmail.com
 
-- [linkedin](https://www.linkedin.com/in/v%C3%ADtor-beltr%C3%A3o-56a912178/)
+- [linkedin](https://www.linkedin.com/in/vitorbeltrao/)
 
 - [github](https://github.com/vitorbeltrao)
 
-- [medium](https://pandascouple.medium.com)
+- [medium](https://medium.com/@vitorbeltrao300)
 
-Licensing: [MIT LICENSE](https://github.com/vitorbeltrao/risk_assessment/blob/main/LICENSE)
+Licensing: [MIT LICENSE](https://github.com/vitorbeltrao/fraud-detection/blob/main/LICENSE)

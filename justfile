@@ -66,4 +66,4 @@ deploy:
     sh deploy.sh
 
 destroy:
-    cd monitoring_system/ && terraform init && terraform destroy -auto-approve && cd .. &&  cd inference_system/ && terraform destroy -auto-approve && cd .. && cd repo-imagem/ && terraform destroy -auto-approve && cd .. && cd inference_system/ && terraform destroy -auto-approve && cd .. && cd model_data_drift_system/ && terraform destroy -auto-approve
+    cd monitoring_system/ && terraform init && terraform destroy -auto-approve && cd .. &&  cd continuous_training_system/ && terraform destroy -auto-approve && cd .. && cd repo-imagem/ && terraform destroy -auto-approve && cd .. && cd inference_system/ && terraform destroy -auto-approve && cd .. && cd model_data_drift_system/ && terraform destroy -auto-approve

@@ -12,36 +12,42 @@ resource "aws_ssm_parameter" "bucket_name_data" {
   name  = "/model-data-drift-fraud-func/BUCKET_NAME_DATA"
   type  = "String"
   value = var.bucket_name_data
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_model" {
   name  = "/model-data-drift-fraud-func/BUCKET_NAME_MODEL"
   type  = "String"
   value = var.bucket_name_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_data_drift" {
   name  = "/model-data-drift-fraud-func/BUCKET_NAME_DATA_DRIFT"
   type  = "String"
   value = var.bucket_name_data_drift
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_train_model" {
   name  = "/model-data-drift-fraud-func/DYNAMO_TABLE_TRAIN_MODEL"
   type  = "String"
   value = var.dynamo_table_train_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_test_model" {
   name  = "/model-data-drift-fraud-func/DYNAMO_TABLE_TEST_MODEL"
   type  = "String"
   value = var.dynamo_table_test_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "sns_topic_model_drift" {
   name  = "/model-data-drift-fraud-func/SNS_TOPIC_MODEL_DRIFT"
   type  = "String"
   value = var.sns_topic_model_drift
+  overwrite = true
 }
 
 data "aws_ecr_repository" "model_data_drift_repo_image" {
@@ -139,7 +145,7 @@ resource "aws_lambda_function" "model_data_drift_fraud_func" {
   }
 }
 
-resource "aws_iam_policy" "s3_access_policy" {
+resource "aws_iam_policy" "model_data_drift_access_s3_policy" {
   name        = "access-s3-ct"
   description = "Permite que a lambda acesse os buckets de dados e de modelos"
   
@@ -147,12 +153,13 @@ resource "aws_iam_policy" "s3_access_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Action   = ["s3:GetObject", "s3:PutObject"],
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
         Effect   = "Allow",
         Resource = [
+          "${data.aws_s3_bucket.fraud_data_bucket.arn}",
           "${data.aws_s3_bucket.fraud_data_bucket.arn}/*",
+          "${data.aws_s3_bucket.fraud_model_bucket.arn}",
           "${data.aws_s3_bucket.fraud_model_bucket.arn}/*",
-          "${aws_s3_bucket.fraud_model_data_drift_bucket.arn}/*",
         ],
       },
     ],
@@ -162,11 +169,11 @@ resource "aws_iam_policy" "s3_access_policy" {
 # Anexa a policy ao role
 resource "aws_iam_role_policy_attachment" "attach_policy_fraud_read_bucket_models" {
   role       = aws_iam_role.data_model_drift_fraud_role.name
-  policy_arn = aws_iam_policy.s3_access_policy.arn
+  policy_arn = aws_iam_policy.model_data_drift_access_s3_policy.arn
 }
 
 # Cria uma policy de leitura na tabela de modelos
-resource "aws_iam_policy" "policy_fraud_read_tables" {
+resource "aws_iam_policy" "model_data_drift_policy_fraud_read_tables" {
   name        = "policy-fraud-read-bucket-models"
   description = "Allow that lambda read the tables"  
 
@@ -190,9 +197,9 @@ resource "aws_iam_policy" "policy_fraud_read_tables" {
 }
 
 # Anexa a policy ao role
-resource "aws_iam_role_policy_attachment" "attach_policy_fraud_read_tables" {
+resource "aws_iam_role_policy_attachment" "attach_model_data_drift_policy_fraud_read_tables" {
   role       = aws_iam_role.data_model_drift_fraud_role.name
-  policy_arn = aws_iam_policy.policy_fraud_read_tables.arn
+  policy_arn = aws_iam_policy.model_data_drift_policy_fraud_read_tables.arn
 }
 
 # Cria o grupo de logs CloudWatch

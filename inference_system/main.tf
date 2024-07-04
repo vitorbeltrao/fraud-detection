@@ -12,24 +12,28 @@ resource "aws_ssm_parameter" "bucket_name_data" {
   name  = "/inference-fraud-func/BUCKET_NAME_DATA"
   type  = "String"
   value = var.bucket_name_data
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_model" {
   name  = "/inference-fraud-func/BUCKET_NAME_MODEL"
   type  = "String"
   value = var.bucket_name_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_train_model" {
   name  = "/inference-fraud-func/DYNAMO_TABLE_TRAIN_MODEL"
   type  = "String"
   value = var.dynamo_table_train_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_test_model" {
   name  = "/inference-fraud-func/DYNAMO_TABLE_TEST_MODEL"
   type  = "String"
   value = var.dynamo_table_test_model
+  overwrite = true
 }
 
 

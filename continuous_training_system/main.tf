@@ -16,30 +16,35 @@ resource "aws_ssm_parameter" "bucket_name_data" {
   name  = "/ct-function/BUCKET_NAME_DATA"
   type  = "String"
   value = var.bucket_name_data
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_model" {
   name  = "/ct-function/BUCKET_NAME_MODEL"
   type  = "String"
   value = var.bucket_name_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_data_drift" {
   name  = "/ct-function/BUCKET_NAME_DATA_DRIFT"
   type  = "String"
   value = var.bucket_name_data_drift
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_train_model" {
   name  = "/ct-function/DYNAMO_TABLE_TRAIN_MODEL"
   type  = "String"
   value = var.dynamo_table_train_model
+  overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_test_model" {
   name  = "/ct-function/DYNAMO_TABLE_TEST_MODEL"
   type  = "String"
   value = var.dynamo_table_test_model
+  overwrite = true
 }
 
 # 1. PIPELINE DE TREINO
@@ -131,10 +136,12 @@ resource "aws_iam_policy" "s3_access_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Action   = ["s3:GetObject", "s3:PutObject"],
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
         Effect   = "Allow",
         Resource = [
+          "${aws_s3_bucket.fraud_data_bucket.arn}",
           "${aws_s3_bucket.fraud_data_bucket.arn}/*",
+          "${aws_s3_bucket.fraud_model_bucket.arn}",
           "${aws_s3_bucket.fraud_model_bucket.arn}/*",
         ],
       },
