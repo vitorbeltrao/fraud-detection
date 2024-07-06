@@ -7,6 +7,7 @@ Date: Jun/2024
 
 # Import necessary packages
 import boto3
+import decimal
 import numpy as np
 
 
@@ -48,7 +49,7 @@ def get_column_values(table_name, column_name) -> list:
                     values.append(value['B'])  # Binary
             else:
                 # Directly add the value if it's not a dict
-                values.append(value)
+                values.append(float(value) if isinstance(value, (int, float, decimal.Decimal)) else value)
 
     # Continue scanning if there are more items to be retrieved
     while 'LastEvaluatedKey' in response:
@@ -62,8 +63,7 @@ def get_column_values(table_name, column_name) -> list:
             if column_name in item:
                 value = item[column_name]
                 if isinstance(value, dict):
-                    # Handle different DynamoDB data types stored as
-                    # dictionaries
+                    # Handle different DynamoDB data types stored as dictionaries
                     if 'S' in value:
                         values.append(value['S'])  # String
                     elif 'N' in value:
@@ -72,7 +72,7 @@ def get_column_values(table_name, column_name) -> list:
                         values.append(value['B'])  # Binary
                 else:
                     # Directly add the value if it's not a dict
-                    values.append(value)
+                    values.append(float(value) if isinstance(value, (int, float, decimal.Decimal)) else value)
 
     return values
 

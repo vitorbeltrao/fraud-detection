@@ -25,7 +25,7 @@ BUCKET_NAME_MODEL = os.environ['BUCKET_NAME_MODEL']
 BUCKET_NAME_DATA_DRIFT = os.environ['BUCKET_NAME_DATA_DRIFT']
 DYNAMO_TABLE_TRAIN_MODEL = os.environ['DYNAMO_TABLE_TRAIN_MODEL']
 DYNAMO_TABLE_TEST_MODEL = os.environ['DYNAMO_TABLE_TEST_MODEL']
-SNS_TOPIC_ARN = os.environ['SNS_TOPIC_ARN']
+SNS_TOPIC_MODEL_DRIFT = os.environ['SNS_TOPIC_MODEL_DRIFT']
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,7 +72,7 @@ def lambda_handler(event, context):
         'entrega_doc_3', 'pais', 'score_4', 'score_9', 
         'score_10', 'valor_compra', 'fraude'] # columns that we gonna check data drift
     generate_evidently_reports(unified_dataframe, reference_df, selected_columns, BUCKET_NAME_DATA_DRIFT)
-    logging.info('Finish model drift step successfully.\n')
+    logging.info('Finish data drift step successfully.\n')
 
     ########################### MODEL DRIFT ###########################
     # load the last trained model registered
@@ -133,7 +133,7 @@ def lambda_handler(event, context):
             'lambda': 'Model drift detected, triggering retraining and redeployment.'
         }
         sns_response = sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
+            TopicArn=SNS_TOPIC_MODEL_DRIFT,
             Message=json.dumps(message),
             Subject='Model Drift Alert',
             MessageStructure='json'

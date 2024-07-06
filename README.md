@@ -4,11 +4,10 @@
 
 1. [Project Description](#description)
 2. [Files Description](#files)
-3. [Running Files](#running)
-4. [Using the API](#api)
-5. [Model and Data Diagnostics](#diagnostics)
-6. [Orchestration](#orchestration)
-7. [Licensing and Authors](#licensingandauthors)
+3. [Using the API](#api)
+4. [Model and Data Diagnostics](#diagnostics)
+5. [Orchestration](#orchestration)
+6. [Licensing and Authors](#licensingandauthors)
 ***
 
 ## Project Description <a name="description"></a>
@@ -51,7 +50,9 @@ In "fraud-detection" repository we have:
 
 ## Using the API <a name="api"></a>
 
-In progress...
+To test and send a request to the created API, I used [postman](https://www.postman.com/).
+
+![Postman inference](https://github.com/vitorbeltrao/Pictures/blob/main/fraud_detection_postman.png?raw=true)
 ***
 
 ## Model and Data Diagnostics <a name="diagnostics"></a>
