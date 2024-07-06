@@ -97,6 +97,31 @@ resource "aws_iam_role" "data_model_drift_fraud_role" {
   })
 }
 
+# Define a função Lambda
+resource "aws_lambda_function" "model_data_drift_fraud_func" {
+  function_name = "model-data-drift-fraud-func"
+  timeout       = 300 # seconds
+  image_uri     = "${data.aws_ecr_repository.model_data_drift_repo_image.repository_url}:latest"
+  package_type  = "Image"
+  memory_size   = 512 # MB
+  role          = aws_iam_role.data_model_drift_fraud_role.arn
+  architectures = ["x86_64"]
+  environment {
+    variables = {
+      BUCKET_NAME_DATA           = aws_ssm_parameter.bucket_name_data.value
+      BUCKET_NAME_MODEL          = aws_ssm_parameter.bucket_name_model.value
+      BUCKET_NAME_DATA_DRIFT     = aws_ssm_parameter.bucket_name_data_drift.value
+      DYNAMO_TABLE_TRAIN_MODEL   = aws_ssm_parameter.dynamo_table_train_model.value
+      DYNAMO_TABLE_TEST_MODEL    = aws_ssm_parameter.dynamo_table_test_model.value
+      SNS_TOPIC_MODEL_DRIFT      = aws_ssm_parameter.sns_topic_model_drift.value
+    }
+  }
+  logging_config {
+    log_format = "Text"
+    log_group = aws_cloudwatch_log_group.model_data_drift_fraud_lambda_logs.name
+  }
+}
+
 # Define uma política para a Lambda
 resource "aws_iam_policy" "model_data_drift_fraud_policy_lambda" {
   name        = "model-data-drift-fraud-policy-lambda"
@@ -120,33 +145,9 @@ resource "aws_iam_role_policy_attachment" "attach_model_data_drift_fraud_policy_
   policy_arn = aws_iam_policy.model_data_drift_fraud_policy_lambda.arn
 }
 
-# Define a função Lambda
-resource "aws_lambda_function" "model_data_drift_fraud_func" {
-  function_name = "model-data-drift-fraud-func"
-  timeout       = 100 # seconds
-  image_uri     = "${data.aws_ecr_repository.model_data_drift_repo_image.repository_url}:latest"
-  package_type  = "Image"
-  memory_size   = 300 # MB
-  role          = aws_iam_role.data_model_drift_fraud_role.arn
-  architectures = ["x86_64"]
-  environment {
-    variables = {
-      BUCKET_NAME_DATA           = aws_ssm_parameter.bucket_name_data.value
-      BUCKET_NAME_MODEL          = aws_ssm_parameter.bucket_name_model.value
-      BUCKET_NAME_DATA_DRIFT     = aws_ssm_parameter.bucket_name_data_drift.value
-      DYNAMO_TABLE_TRAIN_MODEL   = aws_ssm_parameter.dynamo_table_train_model.value
-      DYNAMO_TABLE_TEST_MODEL    = aws_ssm_parameter.dynamo_table_test_model.value
-      SNS_TOPIC_MODEL_DRIFT      = aws_ssm_parameter.sns_topic_model_drift.value
-    }
-  }
-  logging_config {
-    log_format = "Text"
-    log_group = aws_cloudwatch_log_group.model_data_drift_fraud_lambda_logs.name
-  }
-}
-
+# Política para acessar os buckets S3
 resource "aws_iam_policy" "model_data_drift_access_s3_policy" {
-  name        = "access-s3-ct"
+  name        = "access-s3-model-data-drift"
   description = "Permite que a lambda acesse os buckets de dados e de modelos"
   
   policy = jsonencode({
@@ -160,6 +161,8 @@ resource "aws_iam_policy" "model_data_drift_access_s3_policy" {
           "${data.aws_s3_bucket.fraud_data_bucket.arn}/*",
           "${data.aws_s3_bucket.fraud_model_bucket.arn}",
           "${data.aws_s3_bucket.fraud_model_bucket.arn}/*",
+          "${aws_s3_bucket.fraud_model_data_drift_bucket.arn}",
+          "${aws_s3_bucket.fraud_model_data_drift_bucket.arn}/*"
         ],
       },
     ],
@@ -172,9 +175,8 @@ resource "aws_iam_role_policy_attachment" "attach_policy_fraud_read_bucket_model
   policy_arn = aws_iam_policy.model_data_drift_access_s3_policy.arn
 }
 
-# Cria uma policy de leitura na tabela de modelos
 resource "aws_iam_policy" "model_data_drift_policy_fraud_read_tables" {
-  name        = "policy-fraud-read-bucket-models"
+  name        = "policy-fraud-read-tables"
   description = "Allow that lambda read the tables"  
 
   policy = jsonencode({
@@ -185,7 +187,7 @@ resource "aws_iam_policy" "model_data_drift_policy_fraud_read_tables" {
           "dynamodb:GetItem",
           "dynamodb:Scan",
           "dynamodb:Query"
-        ]
+        ],
         Effect   = "Allow",
         Resource = [
           data.aws_dynamodb_table.fraud_train_model_register.arn,
@@ -201,6 +203,7 @@ resource "aws_iam_role_policy_attachment" "attach_model_data_drift_policy_fraud_
   role       = aws_iam_role.data_model_drift_fraud_role.name
   policy_arn = aws_iam_policy.model_data_drift_policy_fraud_read_tables.arn
 }
+
 
 # Cria o grupo de logs CloudWatch
 resource "aws_cloudwatch_log_group" "model_data_drift_fraud_lambda_logs" {
