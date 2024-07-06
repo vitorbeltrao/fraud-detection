@@ -1,52 +1,52 @@
 terraform {
-    backend "s3" {
-        bucket = "ct-fraud-detection-bucket"
-        key    = "model-data-drift-pipeline/terraform.tfstate"
-        region = "us-east-1"
-    }
+  backend "s3" {
+    bucket = "ct-fraud-detection-bucket"
+    key    = "model-data-drift-pipeline/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 ########### Referenciar as variaveis sensíveis ###########
 
 resource "aws_ssm_parameter" "bucket_name_data" {
-  name  = "/model-data-drift-fraud-func/BUCKET_NAME_DATA"
-  type  = "String"
-  value = var.bucket_name_data
+  name      = "/model-data-drift-fraud-func/BUCKET_NAME_DATA"
+  type      = "String"
+  value     = var.bucket_name_data
   overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_model" {
-  name  = "/model-data-drift-fraud-func/BUCKET_NAME_MODEL"
-  type  = "String"
-  value = var.bucket_name_model
+  name      = "/model-data-drift-fraud-func/BUCKET_NAME_MODEL"
+  type      = "String"
+  value     = var.bucket_name_model
   overwrite = true
 }
 
 resource "aws_ssm_parameter" "bucket_name_data_drift" {
-  name  = "/model-data-drift-fraud-func/BUCKET_NAME_DATA_DRIFT"
-  type  = "String"
-  value = var.bucket_name_data_drift
+  name      = "/model-data-drift-fraud-func/BUCKET_NAME_DATA_DRIFT"
+  type      = "String"
+  value     = var.bucket_name_data_drift
   overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_train_model" {
-  name  = "/model-data-drift-fraud-func/DYNAMO_TABLE_TRAIN_MODEL"
-  type  = "String"
-  value = var.dynamo_table_train_model
+  name      = "/model-data-drift-fraud-func/DYNAMO_TABLE_TRAIN_MODEL"
+  type      = "String"
+  value     = var.dynamo_table_train_model
   overwrite = true
 }
 
 resource "aws_ssm_parameter" "dynamo_table_test_model" {
-  name  = "/model-data-drift-fraud-func/DYNAMO_TABLE_TEST_MODEL"
-  type  = "String"
-  value = var.dynamo_table_test_model
+  name      = "/model-data-drift-fraud-func/DYNAMO_TABLE_TEST_MODEL"
+  type      = "String"
+  value     = var.dynamo_table_test_model
   overwrite = true
 }
 
 resource "aws_ssm_parameter" "sns_topic_model_drift" {
-  name  = "/model-data-drift-fraud-func/SNS_TOPIC_MODEL_DRIFT"
-  type  = "String"
-  value = var.sns_topic_model_drift
+  name      = "/model-data-drift-fraud-func/SNS_TOPIC_MODEL_DRIFT"
+  type      = "String"
+  value     = var.sns_topic_model_drift
   overwrite = true
 }
 
@@ -87,8 +87,8 @@ resource "aws_iam_role" "data_model_drift_fraud_role" {
     Version = "2012-10-17",
     Statement = [
       {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
+        Action    = "sts:AssumeRole",
+        Effect    = "Allow",
         Principal = {
           Service = "lambda.amazonaws.com"
         }
@@ -108,24 +108,24 @@ resource "aws_lambda_function" "model_data_drift_fraud_func" {
   architectures = ["x86_64"]
   environment {
     variables = {
-      BUCKET_NAME_DATA           = aws_ssm_parameter.bucket_name_data.value
-      BUCKET_NAME_MODEL          = aws_ssm_parameter.bucket_name_model.value
-      BUCKET_NAME_DATA_DRIFT     = aws_ssm_parameter.bucket_name_data_drift.value
-      DYNAMO_TABLE_TRAIN_MODEL   = aws_ssm_parameter.dynamo_table_train_model.value
-      DYNAMO_TABLE_TEST_MODEL    = aws_ssm_parameter.dynamo_table_test_model.value
-      SNS_TOPIC_MODEL_DRIFT      = aws_ssm_parameter.sns_topic_model_drift.value
+      BUCKET_NAME_DATA         = aws_ssm_parameter.bucket_name_data.value
+      BUCKET_NAME_MODEL        = aws_ssm_parameter.bucket_name_model.value
+      BUCKET_NAME_DATA_DRIFT   = aws_ssm_parameter.bucket_name_data_drift.value
+      DYNAMO_TABLE_TRAIN_MODEL = aws_ssm_parameter.dynamo_table_train_model.value
+      DYNAMO_TABLE_TEST_MODEL  = aws_ssm_parameter.dynamo_table_test_model.value
+      SNS_TOPIC_MODEL_DRIFT    = aws_ssm_parameter.sns_topic_model_drift.value
     }
   }
   logging_config {
     log_format = "Text"
-    log_group = aws_cloudwatch_log_group.model_data_drift_fraud_lambda_logs.name
+    log_group  = aws_cloudwatch_log_group.model_data_drift_fraud_lambda_logs.name
   }
 }
 
 # Define uma política para a Lambda
 resource "aws_iam_policy" "model_data_drift_fraud_policy_lambda" {
   name        = "model-data-drift-fraud-policy-lambda"
-  description = "Allow that lambda invoke the function"  
+  description = "Allow that lambda invoke the function"
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -149,7 +149,7 @@ resource "aws_iam_role_policy_attachment" "attach_model_data_drift_fraud_policy_
 resource "aws_iam_policy" "model_data_drift_access_s3_policy" {
   name        = "access-s3-model-data-drift"
   description = "Permite que a lambda acesse os buckets de dados e de modelos"
-  
+
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -177,13 +177,13 @@ resource "aws_iam_role_policy_attachment" "attach_policy_fraud_read_bucket_model
 
 resource "aws_iam_policy" "model_data_drift_policy_fraud_read_tables" {
   name        = "policy-fraud-read-tables"
-  description = "Allow that lambda read the tables"  
+  description = "Allow that lambda read the tables"
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Action = [
+        Action   = [
           "dynamodb:GetItem",
           "dynamodb:Scan",
           "dynamodb:Query"
@@ -204,6 +204,28 @@ resource "aws_iam_role_policy_attachment" "attach_model_data_drift_policy_fraud_
   policy_arn = aws_iam_policy.model_data_drift_policy_fraud_read_tables.arn
 }
 
+# Política para publicar no SNS
+resource "aws_iam_policy" "model_data_drift_sns_policy" {
+  name        = "model-data-drift-sns-policy"
+  description = "Allow Lambda to publish to SNS"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = "sns:Publish",
+        Effect   = "Allow",
+        Resource = var.sns_topic_model_drift
+      }
+    ]
+  })
+}
+
+# Anexa a policy ao role
+resource "aws_iam_role_policy_attachment" "attach_sns_policy" {
+  role       = aws_iam_role.data_model_drift_fraud_role.name
+  policy_arn = aws_iam_policy.model_data_drift_sns_policy.arn
+}
 
 # Cria o grupo de logs CloudWatch
 resource "aws_cloudwatch_log_group" "model_data_drift_fraud_lambda_logs" {
@@ -213,15 +235,15 @@ resource "aws_cloudwatch_log_group" "model_data_drift_fraud_lambda_logs" {
 resource "aws_iam_policy" "model_data_drift_fraud_cloudwatch_policy" {
   name   = "model-data-drift-fraud-cloudwatch-policy"
   policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
+    Version   = "2012-10-17",
+    Statement = [
       {
-        Action : [
+        Action   = [
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],
-        Effect : "Allow",
-        Resource : "arn:aws:logs:*:*:*"
+        Effect   = "Allow",
+        Resource = "arn:aws:logs:*:*:*"
       }
     ]
   })
@@ -235,7 +257,7 @@ resource "aws_iam_role_policy_attachment" "anexar_policy_cloudwatch" {
 
 ###### Trigger ######
 
-# Permissao para a lambda ser invocada pelo CloudWatch
+# Permissão para a lambda ser invocada pelo CloudWatch
 resource "aws_lambda_permission" "lambda_cloudwatch_permission" {
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
@@ -246,8 +268,8 @@ resource "aws_lambda_permission" "lambda_cloudwatch_permission" {
 
 # Define uma regra para o CloudWatch
 resource "aws_cloudwatch_event_rule" "lambda_scheduler" {
-  name        = "model-data-drift-fraud-scheduler"
-  description = "Scheduled rule to trigger Lambda function"
+  name                = "model-data-drift-fraud-scheduler"
+  description         = "Scheduled rule to trigger Lambda function"
   schedule_expression = "cron(0 0 ? * SUN *)"  # a cada domingo, meia noite
 }
 
